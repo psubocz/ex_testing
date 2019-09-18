@@ -36,4 +36,19 @@ defmodule ExTestingTest do
   test "log later unsupervised" do
     ExTesting.log_later_unsupervised("test log")
   end
+
+  @tag supervised: true
+  test "wait for task to finish" do
+    ExTesting.log_later("test log")
+    wait_for_background_tasks()
+  end
+
+  defp wait_for_background_tasks do
+    ExTesting.TaskSupervisor
+    |> Task.Supervisor.children()
+    |> Enum.map(fn child ->
+      ref = Process.monitor(child)
+      assert_receive({:DOWN, ^ref, :process, child, _}, 1000)
+    end)
+  end
 end
